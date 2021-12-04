@@ -1,31 +1,12 @@
 const moviesRouter = require("express").Router();
+const {
+  getMoviesController,
+  getAMovieController,
+} = require("../controllers/moviesCtrl");
 const Movie = require("../models/movie");
 
-moviesRouter.get("/", (req, res) => {
-  const { max_duration, color } = req.query;
-  Movie.findMany({ filters: { max_duration, color } })
-    .then((movies) => {
-      res.json(movies);
-    })
-    .catch((err) => {
-      console.log(err);
-      res.status(500).send("Error retrieving movies from database");
-    });
-});
-
-moviesRouter.get("/:id", (req, res) => {
-  Movie.findOne(req.params.id)
-    .then((movie) => {
-      if (movie) {
-        res.json(movie);
-      } else {
-        res.status(404).send("Movie not found");
-      }
-    })
-    .catch((err) => {
-      res.status(500).send("Error retrieving movie from database");
-    });
-});
+moviesRouter.get("/", getMoviesController);
+moviesRouter.get("/:id", getAMovieController);
 
 moviesRouter.post("/", (req, res) => {
   const error = Movie.validate(req.body);

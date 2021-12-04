@@ -14,17 +14,15 @@ exports.getMoviesController = (req, res) => {
 };
 
 exports.getAMovieController = (req, res) => {
-  const movieId = req.params.id;
-  connection.query(
-    "SELECT * FROM movies WHERE id = ?",
-    [movieId],
-    (err, results) => {
-      if (err) {
-        res.status(500).send("Error retrieving movie from database");
+  Movie.findOne(req.params.id)
+    .then((movie) => {
+      if (movie) {
+        res.json(movie);
       } else {
-        if (results.length) res.json(results[0]);
-        else res.status(404).send("Movie not found");
+        res.status(404).send("Movie not found");
       }
-    }
-  );
+    })
+    .catch((err) => {
+      res.status(500).send("Error retrieving movie from database");
+    });
 };
