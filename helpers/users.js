@@ -1,9 +1,13 @@
-const crypto = require('crypto');
+const jwt = require("jsonwebtoken");
 
-const PRIVATE_KEY = "superSecretStringNowoneShouldKnowOrTheCanGenerateTokens"
+const PRIVATE_KEY = "superSecretStringNowoneShouldKnowOrTheCanGenerateTokens";
 
-const calculateToken = (userEmail = "") => {
-    return crypto.createHash('md5').update(userEmail + PRIVATE_KEY).digest("hex");
-}
+const calculateToken = (userEmail = "", user_id) => {
+  return jwt.sign({ email: userEmail, user_id }, PRIVATE_KEY);
+};
 
-module.exports = { calculateToken };
+const decode = (token) => {
+  return jwt.decode(token);
+};
+
+module.exports = { calculateToken, decode };
