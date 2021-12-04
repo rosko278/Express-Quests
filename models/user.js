@@ -1,26 +1,27 @@
-const connection = require('../db-config');
-const Joi = require('joi');
-const argon2 = require('argon2');
+const connection = require("../db-config");
+const Joi = require("joi");
+const argon2 = require("argon2");
+const { calculateToken } = require("../helpers/users");
 
 const db = connection.promise();
 
 const validate = (data, forCreation = true) => {
-  const presence = forCreation ? 'required' : 'optional';
+  const presence = forCreation ? "required" : "optional";
   return Joi.object({
     email: Joi.string().email().max(255).presence(presence),
     password: Joi.string().min(8).max(50).presence(presence),
     firstname: Joi.string().max(255).presence(presence),
     lastname: Joi.string().max(255).presence(presence),
-    city: Joi.string().allow(null, '').max(255),
-    language: Joi.string().allow(null, '').max(255),
+    city: Joi.string().allow(null, "").max(255),
+    language: Joi.string().allow(null, "").max(255),
   }).validate(data, { abortEarly: false }).error;
 };
 
 const findMany = ({ filters: { language } }) => {
-  let sql = 'SELECT id, email, firstname, lastname, city, language FROM users';
+  let sql = "SELECT id, email, firstname, lastname, city, language FROM users";
   const sqlValues = [];
   if (language) {
-    sql += ' WHERE language = ?';
+    sql += " WHERE language = ?";
     sqlValues.push(language);
   }
 
@@ -30,7 +31,7 @@ const findMany = ({ filters: { language } }) => {
 const findOne = (id) => {
   return db
     .query(
-      'SELECT id, email, firstname, lastname, city, language FROM users WHERE id = ?',
+      "SELECT id, email, firstname, lastname, city, language FROM users WHERE id = ?",
       [id]
     )
     .then(([results]) => results[0]);
@@ -38,26 +39,34 @@ const findOne = (id) => {
 
 const findByEmail = (email) => {
   return db
-    .query('SELECT * FROM users WHERE email = ?', [email])
+    .query("SELECT * FROM users WHERE email = ?", [email])
+    .then(([results]) => results[0]);
+};
+
+const findByToken = (token) => {
+  return db
+    .query("SELECT id FROM users WHERE token = ?", [token])
     .then(([results]) => results[0]);
 };
 
 const findByEmailWithDifferentId = (email, id) => {
   return db
-    .query('SELECT * FROM users WHERE email = ? AND id <> ?', [email, id])
+    .query("SELECT * FROM users WHERE email = ? AND id <> ?", [email, id])
     .then(([results]) => results[0]);
 };
 
 const create = ({ firstname, lastname, city, language, email, password }) => {
+  const token = calculateToken(email);
   return hashPassword(password).then((hashedPassword) => {
     return db
-      .query('INSERT INTO users SET ?', {
+      .query("INSERT INTO users SET ?", {
         firstname,
         lastname,
         city,
         language,
         email,
         hashedPassword,
+        token,
       })
       .then(([result]) => {
         const id = result.insertId;
@@ -67,12 +76,12 @@ const create = ({ firstname, lastname, city, language, email, password }) => {
 };
 
 const update = (id, newAttributes) => {
-  return db.query('UPDATE users SET ? WHERE id = ?', [newAttributes, id]);
+  return db.query("UPDATE users SET ? WHERE id = ?", [newAttributes, id]);
 };
 
 const destroy = (id) => {
   return db
-    .query('DELETE FROM users WHERE id = ?', [id])
+    .query("DELETE FROM users WHERE id = ?", [id])
     .then(([result]) => result.affectedRows !== 0);
 };
 
@@ -102,4 +111,5 @@ module.exports = {
   findByEmailWithDifferentId,
   hashPassword,
   verifyPassword,
+  findByToken,
 };
